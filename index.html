@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co http://localhost:* http://127.0.0.1:*; base-uri 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <title>Note Transfer</title>
+  <meta name="description" content="Move notes, code snippets and tokens between devices with short-lived, end-to-end encrypted note spaces.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Cpath d='M9 11h10M9 16h14M9 21h8' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" id="brand-link">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M9 11h10M9 16h14M9 21h8"/></svg>
+      <span>Note Transfer</span>
+    </a>
+    <span class="lock-badge" title="Notes are encrypted in your browser before they're uploaded">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      End-to-end encrypted
+    </span>
+  </header>
+
+  <main id="app">
+    <noscript><div class="card">Note Transfer needs JavaScript to encrypt and decrypt your notes.</div></noscript>
+
+    <!-- Shown when js/config.js hasn't been filled in -->
+    <section id="view-setup" class="view" hidden>
+      <div class="card prose">
+        <h1>Almost there</h1>
+        <p>This site needs a free Supabase project for storage. One-time setup:</p>
+        <ol>
+          <li>Create a project at <a href="https://supabase.com" rel="noopener noreferrer" target="_blank">supabase.com</a>.</li>
+          <li>Open <b>SQL Editor</b>, paste the contents of <code>supabase/schema.sql</code> from this repository, and click <b>Run</b>.</li>
+          <li>Copy the <b>Project URL</b> and the <b>anon</b> / <b>publishable</b> key from <b>Project Settings → API</b>.</li>
+          <li>Paste them into <code>js/config.js</code>, then commit and push.</li>
+        </ol>
+        <p class="muted">See the README for details.</p>
+      </div>
+    </section>
+
+    <!-- Shown when the browser lacks Web Crypto (e.g. served over plain http) -->
+    <section id="view-nocrypto" class="view" hidden>
+      <div class="card prose">
+        <h1>Secure connection required</h1>
+        <p>Your browser only allows encryption on secure (<code>https://</code>) pages. Open this site over https, or on <code>localhost</code> for local testing.</p>
+      </div>
+    </section>
+
+    <section id="view-home" class="view" hidden>
+      <div class="hero">
+        <h1>Move notes between your devices.</h1>
+        <p>Make a note space with a name and password, drop in snippets, tokens or text, then open it from any other device. Spaces delete themselves after at most 5 days.</p>
+      </div>
+
+      <div class="card auth-card">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-join" aria-controls="form-join" aria-selected="true">Join a space</button>
+          <button type="button" role="tab" id="tab-create" aria-controls="form-create" aria-selected="false">Create a space</button>
+        </div>
+
+        <form id="form-join" class="stack" role="tabpanel" aria-labelledby="tab-join" novalidate>
+          <label class="field">
+            <span>Space name</span>
+            <input name="name" class="space-name-input" type="text" inputmode="url" autocomplete="username"
+                   autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="64" placeholder="e.g. my-laptop-stuff" required>
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <span class="pw-wrap">
+              <input name="password" type="password" autocomplete="current-password" required>
+              <button type="button" class="pw-toggle" aria-label="Show password">Show</button>
+            </span>
+          </label>
+          <label class="check"><input type="checkbox" name="remember"> Remember on this device until the space expires</label>
+          <p class="form-error" role="alert" hidden></p>
+          <button type="submit" class="btn primary block">Join space</button>
+        </form>
+
+        <form id="form-create" class="stack" role="tabpanel" aria-labelledby="tab-create" novalidate hidden>
+          <label class="field">
+            <span>Space name</span>
+            <input name="name" class="space-name-input" type="text" inputmode="url" autocomplete="username"
+                   autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="64" placeholder="e.g. my-laptop-stuff" required>
+            <small class="muted">Lowercase letters, numbers and hyphens. Freed up again once the space expires.</small>
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <span class="pw-wrap">
+              <input name="password" type="password" autocomplete="new-password" minlength="6" required>
+              <button type="button" class="pw-toggle" aria-label="Show password">Show</button>
+            </span>
+            <small class="muted">At least 6 characters. Notes are encrypted with it, so it can’t be recovered or reset.</small>
+          </label>
+          <label class="field">
+            <span>Confirm password</span>
+            <input name="confirm" type="password" autocomplete="new-password" required>
+          </label>
+          <fieldset class="field">
+            <legend>Delete after</legend>
+            <div class="lifespan-picker" data-picker="create"></div>
+          </fieldset>
+          <label class="check"><input type="checkbox" name="remember"> Remember on this device until the space expires</label>
+          <p class="form-error" role="alert" hidden></p>
+          <button type="submit" class="btn primary block">Create space</button>
+        </form>
+      </div>
+
+      <div id="remembered" class="card" hidden>
+        <h2 class="card-title">Remembered on this device</h2>
+        <ul class="remembered-list"></ul>
+      </div>
+
+      <div class="features">
+        <div><b>Encrypted in your browser</b><p>Your password never leaves the device. The server only stores ciphertext.</p></div>
+        <div><b>Deletes itself</b><p>Choose a lifespan of up to 5 days. When it ends, the space, its notes and its name are gone.</p></div>
+        <div><b>Works anywhere</b><p>Any browser on any device: work, school, home or mobile. Nothing to install.</p></div>
+      </div>
+    </section>
+
+    <section id="view-space" class="view" hidden>
+      <div class="card space-header">
+        <div class="space-meta">
+          <p class="eyebrow">Note space</p>
+          <h1 id="space-name"></h1>
+          <p class="expiry"><span class="dot" aria-hidden="true"></span><span id="space-expiry"></span></p>
+        </div>
+        <div class="space-actions">
+          <button type="button" class="btn" id="btn-refresh" title="Refresh notes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg><span>Refresh</span>
+          </button>
+          <button type="button" class="btn" id="btn-expiry">Change expiry</button>
+          <button type="button" class="btn" id="btn-leave">Leave</button>
+          <button type="button" class="btn danger" id="btn-delete-space">Delete space</button>
+        </div>
+      </div>
+
+      <form id="form-note" class="card composer stack" novalidate>
+        <input name="title" type="text" placeholder="Title (optional)" maxlength="300" autocomplete="off">
+        <textarea name="body" rows="5" placeholder="Paste or type anything: a code snippet, a token, a link…"
+                  autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        <div class="row">
+          <span class="muted small hint-shortcut">Ctrl/⌘ + Enter to save</span>
+          <button type="submit" class="btn primary">Add note</button>
+        </div>
+      </form>
+
+      <div class="notes-toolbar">
+        <h2 id="notes-count" class="card-title">Notes</h2>
+        <span id="sync-status" class="muted small"></span>
+      </div>
+      <p id="notes-empty" class="empty" hidden>No notes yet. Add one above, and it will show up on every device that joins this space.</p>
+      <ul id="notes" class="notes"></ul>
+    </section>
+  </main>
+
+  <footer class="footer muted small">
+    Short-lived, end-to-end encrypted note spaces.
+  </footer>
+
+  <dialog id="dlg-expiry">
+    <form method="dialog" class="stack" id="form-expiry" novalidate>
+      <h2>Change expiry</h2>
+      <p class="muted small" id="expiry-info"></p>
+      <fieldset class="field">
+        <legend>Delete in… (from now)</legend>
+        <div class="lifespan-picker" data-picker="expiry"></div>
+      </fieldset>
+      <p class="form-error" role="alert" hidden></p>
+      <div class="row end">
+        <button type="button" class="btn" value="cancel" id="btn-expiry-cancel">Cancel</button>
+        <button type="submit" class="btn primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
