@@ -7,5 +7,5 @@
 // SUPABASE_KEY can be either the legacy "anon" key (starts with "eyJ...") or the
 // newer "publishable" key (starts with "sb_publishable_...").
 
-export const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // e.g. 'https://abcdefghijkl.supabase.co'
-export const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY';
+export const SUPABASE_URL = 'https://xhylpxarnzqcrhyanfcc.supabase.co'; // e.g. 'https://abcdefghijkl.supabase.co'
+export const SUPABASE_KEY = 'sb_publishable_wDMX-vA_kfYX_Galqirzig_PGpGKQSI';
